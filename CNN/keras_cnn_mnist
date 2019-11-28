@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 19 20:58:07 2019
+
+@author: lucien
+"""
+
+from keras import models
+from keras import layers
+
+import numpy as np
+import matplotlib.pyplot as plt
+from keras.datasets import mnist
+
+
+def plot_image(X_train):
+    image = X_train[1,:,:,:]
+    image = np.reshape(image,(28,28))
+    plt.imshow(image)
+    plt.show()
+
+def to_categorical(y):
+    nb_examples = np.shape(y)[0]
+    y_categorical = np.zeros((nb_examples,10))
+    for i in range(0,nb_examples):
+        label = y[i]
+        y_categorical[i,label] = 1
+    return y_categorical
+
+def init_data():
+    (X_train , y_train) , (X_test, y_test) = mnist.load_data()
+    X_train=X_train[0:50000,:,:]
+    y_train=y_train[0:50000]
+    X_test = X_test[0:10000,:,:]
+    y_test = y_test[0:10000]
+   
+  #  X_test=X_test.astype('float32')/255
+   # X_train=X_train.astype('float32')/255
+    X_test = (X_test - np.mean(X_test,axis=0))/np.std(X_test)
+    X_train = (X_train - np.mean(X_train,axis=0))/np.std(X_train)
+    
+    X_train = np.reshape(X_train,(50000,28,28,1))
+    X_test = np.reshape(X_test,(10000,28,28,1))
+    
+    y_test = to_categorical(y_test)
+    y_train = to_categorical(y_train)
+    return (X_test,y_test,X_train,y_train)
+
+
+def init_model():
+        
+    model = models.Sequential()
+    
+    model.add(layers.Convolution2D(32,(3,3),activation='relu',input_shape=(28,28,1)))
+    model.add(layers.MaxPooling2D(2,2))
+    model.add(layers.Convolution2D(64,(3,3),activation='relu'))
+    model.add(layers.MaxPooling2D(2,2))
+    model.add(layers.Convolution2D(64,(3,3),activation='relu'))
+    
+    model.add(layers.Flatten())
+    model.add(layers.Dense(64,activation='relu'))
+    model.add(layers.Dense(10,activation='softmax'))
+    
+    return model
+
+def plot_loss(history):
+        
+    train_loss = history.history["loss"]
+    train_acc = history.history["acc"]
+    test_acc = history.history["val_acc"]
+    test_loss = history.history["val_loss"]
+
+    x = range(0,len(train_loss))
+    plt.plot(x,train_loss,label="train loss")
+    plt.plot(x,test_loss, label='test loss')
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+    plt.legend()
+    plt.show()
+    
+    print("train accuracy ",train_acc[len(train_acc)-1], " test accuracy", test_acc[len(test_acc)-1])
+    
+    
+X_test,y_test,X_train,y_train = init_data()
+plot_image(X_train)
+
+model = init_model()
+model.compile(optimizer='rmsprop',loss="categorical_crossentropy",metrics=["accuracy"])
+
+history=model.fit(X_train,y_train,epochs=2,batch_size=128,validation_data=(X_test,y_test))  #validation_data=(X_test,y_test),
+plot_loss(history)
+
+
+
+
+
+
+
+
